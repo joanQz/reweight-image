@@ -11,5 +11,8 @@
   "types": "lib/index.d.ts",
   "files": [
     "lib/**/*"
-  ]
+  ],
+  "dependencies": {
+    "rxjs": "^6.6.6"
+  }
 }
