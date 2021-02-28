@@ -1,6 +1,11 @@
 import { empty, Observable, Observer } from 'rxjs';
 import { expand, flatMap, map } from 'rxjs/operators';
 
+interface Base64blob {
+  base64: string,
+  blob: Blob
+}
+
 export class Reweight {
 
   /**
@@ -18,7 +23,7 @@ export class Reweight {
   * specified means there's no limit for this property
   */
   static compressImage(image: File,
-    limits?: {
+    limits: {
         maxImageSize?: number,
         jpegQuality?: number,
         maxFileSizeMb?: number,
@@ -34,37 +39,42 @@ export class Reweight {
       limits.jpegQualityRatio = 0.99;
     let maxImageSize = limits.maxImageSize,
         jpegQuality = limits.jpegQuality;
+
     return this.getUrlFromBlob(image).pipe(
-      flatMap((base64image)=>{
-        return this._subCompressImage(base64image, maxImageSize, jpegQuality);
-      }),
-      expand((ret: {base64: string, blob: Blob})=> {
-        if (ret.blob.size > maxFileSize) {
-          maxImageSize *= limits.imageSizeRatio;
-          jpegQuality *= limits.jpegQualityRatio;
-          return this._subCompressImage(ret.base64, maxImageSize, jpegQuality)
-        } else
-          return empty();
-      }),
-      map(({blob}) => {
+      // flatMap((base64image)=>{
+      //   return this._subCompressImage(base64image, maxImageSize, jpegQuality);
+      // }),
+      // expand((ret: {base64: string, blob: Blob})=> {
+      //   if (ret.blob.size > maxFileSize) {
+      //     maxImageSize *= limits.imageSizeRatio;
+      //     jpegQuality *= limits.jpegQualityRatio;
+      //     return this._subCompressImage(ret.base64, maxImageSize, jpegQuality)
+      //   } else
+      //     return empty();
+      // }),
+      // map(({blob}) => {
+      //   // console.log(`size: ${blob.size/1000000}, dim: ${Math.round(maxImageSize)}, q: ${Math.round(jpegQuality*100)}`)
+      //   return new File([blob], image.name, {type: 'image/jpeg'});
+      // })
+      map((blob) => {
         // console.log(`size: ${blob.size/1000000}, dim: ${Math.round(maxImageSize)}, q: ${Math.round(jpegQuality*100)}`)
         return new File([blob], image.name, {type: 'image/jpeg'});
       })
     );
   }
 
-  private _subCompressImage(base64image: string, maxImageSize: number, jpegQuality: number)
-    : Observable<{base64: string, blob: Blob}>
-  {
-    return this.reduceImage64Size(base64image, maxImageSize, jpegQuality).pipe(
-      map((reducedBase64image: string)=>{
-        return {
-          base64: reducedBase64image,
-          blob: this.getBlobFromUrl(reducedBase64image)
-        };
-      }),
-    );
-  }
+  // private _subCompressImage(base64image: string, maxImageSize: number, jpegQuality: number)
+  //   : Observable<Base64blob>
+  // {
+  //   return this.reduceImage64Size(base64image, maxImageSize, jpegQuality).pipe(
+  //     map((reducedBase64image: string)=>{
+  //       return {
+  //         base64: reducedBase64image,
+  //         blob: this.getBlobFromUrl(reducedBase64image)
+  //       };
+  //     }),
+  //   );
+  // }
 
   /**
   * Compress an image by means of its size in pixels or in Mb or by means of
@@ -76,50 +86,50 @@ export class Reweight {
   * Values aren't changed if input image is already below limits. Any value not
   * specified means there's no limit for this property
   */
-  reduceImage64Size(image64: string, maxImageSize?: number, jpegQuality?: number):
-    Observable<string>
-  {
-    // ************************** WHAT DOES IT HAPPEN when maxImageSize is null
-    let imageElement: HTMLImageElement = this.renderer.createElement('img');
-    return Observable.create((observer: Observer<string>)=>{
-      imageElement.onload = () => {
-          const {width: imgWidth, height: imgHeight} = imageElement;
-          let  widthScale  = maxImageSize / imgWidth,
-                heightScale = maxImageSize / imgHeight;
-          let scale = Math.max(widthScale, heightScale);
-
-          if (scale > 1) {
-            maxImageSize = Math.min(imgWidth, imgHeight)
-            scale = 1
-          }
-
-          const growthScale: number = Math.max(widthScale, heightScale) / Math.min(widthScale, heightScale);
-          let   xScale: number,
-                yScale: number;
-          if (imageElement.width > imageElement.height) {
-            xScale = growthScale;
-            yScale = 1;
-          } else {
-            xScale = 1;
-            yScale = growthScale;
-          }
-
-          const canvas: HTMLCanvasElement = this.renderer.createElement('canvas');
-          canvas.width  = maxImageSize * xScale;
-          canvas.height = maxImageSize * yScale;
-          let context = canvas.getContext('2d');
-          context.scale(scale, scale);
-          context.drawImage(imageElement, 0, 0);
-          let reducedImage = canvas.toDataURL('image/jpeg', jpegQuality);
-          observer.next(reducedImage);
-      }
-      imageElement.src = image64;
-    });
-  }
+  // reduceImage64Size(image64: string, maxImageSize?: number, jpegQuality?: number):
+  //   Observable<string>
+  // {
+  //   // ************************** WHAT DOES IT HAPPEN when maxImageSize is null
+  //   let imageElement: HTMLImageElement = this.renderer.createElement('img');
+  //   return Observable.create((observer: Observer<string>)=>{
+  //     imageElement.onload = () => {
+  //         const {width: imgWidth, height: imgHeight} = imageElement;
+  //         let  widthScale  = maxImageSize / imgWidth,
+  //               heightScale = maxImageSize / imgHeight;
+  //         let scale = Math.max(widthScale, heightScale);
+  //
+  //         if (scale > 1) {
+  //           maxImageSize = Math.min(imgWidth, imgHeight)
+  //           scale = 1
+  //         }
+  //
+  //         const growthScale: number = Math.max(widthScale, heightScale) / Math.min(widthScale, heightScale);
+  //         let   xScale: number,
+  //               yScale: number;
+  //         if (imageElement.width > imageElement.height) {
+  //           xScale = growthScale;
+  //           yScale = 1;
+  //         } else {
+  //           xScale = 1;
+  //           yScale = growthScale;
+  //         }
+  //
+  //         const canvas: HTMLCanvasElement = this.renderer.createElement('canvas');
+  //         canvas.width  = maxImageSize * xScale;
+  //         canvas.height = maxImageSize * yScale;
+  //         let context = canvas.getContext('2d');
+  //         context.scale(scale, scale);
+  //         context.drawImage(imageElement, 0, 0);
+  //         let reducedImage = canvas.toDataURL('image/jpeg', jpegQuality);
+  //         observer.next(reducedImage);
+  //     }
+  //     imageElement.src = image64;
+  //   });
+  // }
 
   static getUrlFromBlob(image: Blob): Observable<string> {
     let reader = new FileReader();
-    return Observable.create((observer: Observer<string|ArrayBuffer>)=>{
+    return Observable.create((observer: Observer<string|ArrayBuffer|null>)=>{// for library: added null as | type
       reader.onload = () => {
         let res = reader.result;
         observer.next(res);
