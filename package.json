@@ -1,4 +1,10 @@
 {
   "name": "@ereasons/reweight",
-  "version": "0.1.0"
+  "version": "0.1.0",
+  "devDependencies": {
+    "typescript": "^4.2.2"
+  },
+  "scripts": {
+    "tsc": "tsc"
+  }
 }
