@@ -1,10 +1,5 @@
-import { Observable } from 'rxjs';
-import { map, mergeMap } from 'rxjs/operators';
-
-interface Base64blob {
-  base64: string,
-  blob: Blob
-}
+import { EMPTY, Observable } from 'rxjs';
+import { expand, map } from 'rxjs/operators';
 
 type Base64image = string;
 
@@ -20,22 +15,31 @@ export class Reweight {
                         jpegQualityRatio?: number
                       }
                     ) {
-    let maxFileSize = limits.maxFileSizeMb? limits.maxFileSizeMb*1000000 : undefined;
+    let maxFileSize = limits.maxFileSizeMb? limits.maxFileSizeMb*1000000 : 10000000000000;
     if (limits.maxFileSizeMb && !limits.imageSizeRatio)
       limits.imageSizeRatio = 0.99;
     if (limits.maxFileSizeMb && !limits.jpegQualityRatio)
       limits.jpegQualityRatio = 0.99;
     let maxImageSize = limits.maxImageSize || 10000, //provisional
-        jpegQuality = limits.jpegQuality || 1;
+        jpegQuality = limits.jpegQuality || 1,
+        imageSizeRatio = limits.imageSizeRatio || 0.99,
+        jpegQualityRatio = limits.jpegQualityRatio? limits.jpegQualityRatio: 0.99;
+    // TODO: refactor all these variables default values, by reviewing its actual meaning
     return this.getUrlFromBlob(fileImage).pipe(
-      mergeMap((base64image: Base64image)=>{
-        return this.compressBase64Image(base64image, maxImageSize, jpegQuality);
+      expand((base64image: Base64image)=>{
+        let blob = this.getBlobFromUrl(base64image);
+        if (blob.size > maxFileSize) {
+          maxImageSize *= imageSizeRatio;
+          jpegQuality *= jpegQualityRatio;
+          return this.compressBase64Image(base64image, maxImageSize, jpegQuality);
+        } else
+          return EMPTY;
       }),
-      map((ret: any) => {
-        // seemingly there's an error in rxjs (to confirm): declaring ret as Base64image (string)
+      map((base64image: any) => {
+        // seemingly there's a bug in rxjs (to confirm): declaring ret as Base64image (string)
         // throws a lint and compiling error. Workaround is declaring as any and casting it in the
         // next line
-        let blob = this.getBlobFromUrl(<Base64image>ret)
+        let blob = this.getBlobFromUrl(<Base64image>base64image);
         return new File([blob], fileImage.name, {type: 'image/jpeg'});
       })
     );
@@ -101,12 +105,12 @@ export class Reweight {
   }
 
 
-  getUrlFromBlob(image: Blob): Observable<string> {
+  getUrlFromBlob(image: Blob): Observable<Base64image> {
     let reader = new FileReader();
     return new Observable(observer=>{
       reader.onload = () => {
         let res = reader.result;
-        observer.next(<string>res);
+        observer.next(<Base64image>res);
         //res can be safely cast to string as we use readAsDataURL method
       }
       reader.readAsDataURL(image);
