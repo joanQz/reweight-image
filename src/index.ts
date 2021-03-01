@@ -1,5 +1,5 @@
 import { Observable } from 'rxjs';
-import { mergeMap } from 'rxjs/operators';
+import { map, mergeMap } from 'rxjs/operators';
 
 interface Base64blob {
   base64: string,
@@ -30,6 +30,10 @@ export class Reweight {
     return this.getUrlFromBlob(fileImage).pipe(
       mergeMap((base64image)=>{
         return this.compressBase64Image(base64image, maxImageSize, jpegQuality);
+      }),
+      map((ret) => {
+        let blob = this.getBlobFromUrl(<Base64image>ret)//WARNING error solved by a non-safely cast (or is it safe?)
+        return new File([blob], fileImage.name, {type: 'image/jpeg'});
       })
     );
   }
@@ -38,7 +42,7 @@ export class Reweight {
                                 base64Image: string,
                                 maxImageSize: number,
                                 jpegQuality: number
-                              ): Observable<string> {
+                              ): Observable<Base64image> {
     return new Observable(observer=>{
       let imageElement: HTMLImageElement = document.createElement('img');
       imageElement.onload = () => {
@@ -104,5 +108,33 @@ export class Reweight {
       }
       reader.readAsDataURL(image);
     });
+  }
+
+
+  // returned file is in jpeg format
+  // From https://stackoverflow.com/questions/21227078/convert-base64-to-image-in-javascript-jquery
+  // with litle modifications
+  getBlobFromUrl(base64image: Base64image): Blob {
+    let head = base64image.indexOf('base64,');
+    if (head !== -1)
+      base64image = base64image.substr(head+7);
+    let sliceSize = 1024,
+        byteCharacters = atob(base64image),
+        bytesLength = byteCharacters.length,
+        slicesCount = Math.ceil(bytesLength / sliceSize),
+        byteArrays = new Array(slicesCount);
+
+    for (let sliceIndex = 0; sliceIndex < slicesCount; ++sliceIndex) {
+        let begin = sliceIndex * sliceSize,
+            end = Math.min(begin + sliceSize, bytesLength),
+
+            bytes = new Array(end - begin);
+        for (let offset = begin, i = 0; offset < end; ++i, ++offset) {
+            bytes[i] = byteCharacters[offset].charCodeAt(0);
+        }
+        byteArrays[sliceIndex] = new Uint8Array(bytes);
+    }
+    let blob = new Blob(byteArrays, { type: 'image/jpeg' });
+    return blob;
   }
 }
