@@ -28,11 +28,14 @@ export class Reweight {
     let maxImageSize = limits.maxImageSize || 10000, //provisional
         jpegQuality = limits.jpegQuality || 1;
     return this.getUrlFromBlob(fileImage).pipe(
-      mergeMap((base64image)=>{
+      mergeMap((base64image: Base64image)=>{
         return this.compressBase64Image(base64image, maxImageSize, jpegQuality);
       }),
-      map((ret) => {
-        let blob = this.getBlobFromUrl(<Base64image>ret)//WARNING error solved by a non-safely cast (or is it safe?)
+      map((ret: any) => {
+        // seemingly there's an error in rxjs (to confirm): declaring ret as Base64image (string)
+        // throws a lint and compiling error. Workaround is declaring as any and casting it in the
+        // next line
+        let blob = this.getBlobFromUrl(<Base64image>ret)
         return new File([blob], fileImage.name, {type: 'image/jpeg'});
       })
     );
@@ -46,7 +49,7 @@ export class Reweight {
     return new Observable(observer=>{
       let imageElement: HTMLImageElement = document.createElement('img');
       imageElement.onload = () => {
-        let resizedBase64Image = this.resizeImageElement(imageElement, maxImageSize, jpegQuality);
+        let resizedBase64Image: Base64image = this.resizeImageElement(imageElement, maxImageSize, jpegQuality);
         observer.next(resizedBase64Image);
       }
       imageElement.src = base64Image;
