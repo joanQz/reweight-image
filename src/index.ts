@@ -1,6 +1,11 @@
 import { EMPTY, Observable } from 'rxjs';
 import { expand, map } from 'rxjs/operators';
 
+import { atob } from 'abab';
+import Blob from 'cross-blob';
+// https://stackoverflow.com/questions/14653349/node-js-cant-create-blobs
+// Richie Bendall's solution
+
 type Base64image = string;
 
 export class Reweight {
@@ -126,7 +131,8 @@ export class Reweight {
     if (head !== -1)
       base64image = base64image.substr(head+7);
     let sliceSize = 1024,
-        byteCharacters = atob(base64image),
+        byteCharacters = <Base64image>atob(base64image),
+        // type can be safely cast to Base64image unless base64image is also null
         bytesLength = byteCharacters.length,
         slicesCount = Math.ceil(bytesLength / sliceSize),
         byteArrays = new Array(slicesCount);

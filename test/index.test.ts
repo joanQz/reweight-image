@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 
-const reweight = require('../src/index.ts');
+import reweight = require('../src/index');
 
 test('jest should be working with Typescript', ()=>{
   let n: number = 2;
@@ -17,7 +17,6 @@ test('converting Url into Blob should return a Blob object', ()=>{
       console.log(imageBuffer.byteLength, imageBuffer.toString('base64'))
   */
   const converter = new reweight.Reweight();
-  converter.getBlobFromBase64(base64Image).subscribe((blob: Blob)=>{
-    console.log(blob.size, '1833')
-  });
+  const blob = converter.getBlobFromBase64(base64Image);
+  expect(blob.size).toBe(1833);
 });
