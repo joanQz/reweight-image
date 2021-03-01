@@ -25,9 +25,9 @@ export class Reweight {
         imageSizeRatio = limits.imageSizeRatio || 0.99,
         jpegQualityRatio = limits.jpegQualityRatio? limits.jpegQualityRatio: 0.99;
     // TODO: refactor all these variables default values, by reviewing its actual meaning
-    return this.getUrlFromBlob(fileImage).pipe(
+    return this.getBase64FromBlob(fileImage).pipe(
       expand((base64image: Base64image)=>{
-        let blob = this.getBlobFromUrl(base64image);
+        let blob = this.getBlobFromBase64(base64image);
         if (blob.size > maxFileSize) {
           maxImageSize *= imageSizeRatio;
           jpegQuality *= jpegQualityRatio;
@@ -39,7 +39,7 @@ export class Reweight {
         // seemingly there's a bug in rxjs (to confirm): declaring ret as Base64image (string)
         // throws a lint and compiling error. Workaround is declaring as any and casting it in the
         // next line
-        let blob = this.getBlobFromUrl(<Base64image>base64image);
+        let blob = this.getBlobFromBase64(<Base64image>base64image);
         return new File([blob], fileImage.name, {type: 'image/jpeg'});
       })
     );
@@ -105,7 +105,7 @@ export class Reweight {
   }
 
 
-  getUrlFromBlob(image: Blob): Observable<Base64image> {
+  getBase64FromBlob(image: Blob): Observable<Base64image> {
     let reader = new FileReader();
     return new Observable(observer=>{
       reader.onload = () => {
@@ -121,7 +121,7 @@ export class Reweight {
   // returned file is in jpeg format
   // From https://stackoverflow.com/questions/21227078/convert-base64-to-image-in-javascript-jquery
   // with litle modifications
-  getBlobFromUrl(base64image: Base64image): Blob {
+  getBlobFromBase64(base64image: Base64image): Blob {
     let head = base64image.indexOf('base64,');
     if (head !== -1)
       base64image = base64image.substr(head+7);
