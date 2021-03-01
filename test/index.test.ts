@@ -35,3 +35,9 @@ test('converting passed image64 to Blob should return a Blob object of 1833 byte
   const blob = converter.getBlobFromBase64(base64Image);
   expect(blob.size).toBe(1833);
 });
+
+test('get scales for 4000x3000 to max 1000 returns {0.25, 1000, 750}', ()=>{
+  const converter = new reweight.Reweight();
+  let getScales = converter['getScales'];
+  console.log(getScales(1000, 4000, 3000));
+});
