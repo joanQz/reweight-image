@@ -1,9 +1,6 @@
-import * as fs from 'fs';
 import Blob = require('cross-blob');
 
 import reweight = require('../src/index');
-import * as operators from 'rxjs/operators';
-import { from } from 'rxjs';
 
 test('jest should be working with Typescript', ()=>{
   let n: number = 2;
@@ -38,31 +35,4 @@ test('converting passed image64 to Blob should return a Blob object of 1833 byte
 //   console.log(getScales(1000, 4000, 3000));
 // });
 
-// class File {
-//   readonly lastModifiedDate: Date
-//   readonly name: string;
-//   stream: ()=>ReadableStream<any>;
-//   constructor(fileBits: BlobPart[], filename: string, options?: BlobPropertyBag) {
-//     this.stream = (<Blob>fileBits[0]).;
-//     this.name = filename;
-//     this.lastModifiedDate = new Date();
-//   }
-//
-//   get lastModified(): number {
-//     return this.lastModifiedDate.valueOf();
-//   }
-// }
-
-test('compress image file 1400x1000 to max 700 must return an image 700x500', (): void=>{
-  const imageBuffer = fs.readFileSync('./test/tiny.png'),
-        imageFile = new File([imageBuffer], 'image.jpg', {type: 'image/jpg'});
-  // path is not relative to this file but relative to root, where npm is executed
-  const converter = new reweight.Reweight();
-  let compressedFile = converter.compressImageFile(imageFile,{maxImageSize: 700});
-  compressedFile.pipe(
-    operators.flatMap((file)=> from(file.arrayBuffer)),
-    operators.map((arrayBuffer: ArrayBuffer)=>{
-        fs.writeFile('compressed.jpg', Buffer.from(arrayBuffer), ()=>{});
-    })
-  ).subscribe();
-})
+// TODO: test main function with a headless browser

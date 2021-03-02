@@ -1,8 +1,10 @@
 import { EMPTY, Observable } from 'rxjs';
-import { expand, map } from 'rxjs/operators';
+import { expand, map, mergeMap } from 'rxjs/operators';
 
 import { atob } from 'abab';
-import Blob from 'cross-blob';
+
+import Blob = require('cross-blob');  // do not convert to default, test passes but throws an
+                                      // error when package is imported
 // https://stackoverflow.com/questions/14653349/node-js-cant-create-blobs
 // Richie Bendall's solution
 
@@ -73,7 +75,6 @@ export class Reweight {
     const {width: imgWidth, height: imgHeight} = imageElement;
     const {scale: scale, xScale: xScale, yScale: yScale} =
                                       this.getScales(maxImageSize, imgWidth, imgHeight);
-
     const canvas: HTMLCanvasElement = document.createElement('canvas');
     canvas.width  = xScale;
     canvas.height = yScale;
