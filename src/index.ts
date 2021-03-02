@@ -17,6 +17,7 @@ export class Reweight {
                       fileImage: File,
                       limits: {
                         maxImageSize?: number,
+                        coverMaxImageSize?: boolean,
                         jpegQuality?: number,
                         maxFileSizeMb?: number,
                         imageSizeRatio?: number,
@@ -78,7 +79,7 @@ export class Reweight {
                             ): Base64image {
     const {width: imgWidth, height: imgHeight} = imageElement;
     const {scale: scale, xScale: xScale, yScale: yScale} =
-                                      this.getScales(maxImageSize, imgWidth, imgHeight);
+                                      this.getScales(maxImageSize, imgWidth, imgHeight, true);
     const canvas: HTMLCanvasElement = document.createElement('canvas');
     canvas.width  = xScale;
     canvas.height = yScale;
@@ -89,7 +90,7 @@ export class Reweight {
     return canvas.toDataURL('image/jpeg', jpegQuality);
   }
 
-  private  getScales(maxImageSize: number, imgWidth: number, imgHeight: number) {
+  private  getScales(maxImageSize: number, imgWidth: number, imgHeight: number, cover: boolean) {
     let widthScale  = maxImageSize / imgWidth,
         heightScale = maxImageSize / imgHeight;
     let scale = Math.max(widthScale, heightScale);
