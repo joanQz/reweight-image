@@ -12,6 +12,7 @@ type Base64image = string;
 
 export class Reweight {
 
+  // TODO: add functionality to reduce image size and jpeg quality
   compressImageFile(
                       fileImage: File,
                       limits: {
@@ -33,6 +34,9 @@ export class Reweight {
         jpegQualityRatio = limits.jpegQualityRatio? limits.jpegQualityRatio: 0.99;
     // TODO: refactor all these variables default values, by reviewing its actual meaning
     return this.getBase64FromBlob(fileImage).pipe(
+      mergeMap((base64image: Base64image)=>{
+          return this.compressBase64Image(base64image, maxImageSize, jpegQuality);
+      }),
       expand((base64image: Base64image)=>{
         let blob = this.getBlobFromBase64(base64image);
         if (blob.size > maxFileSize) {
