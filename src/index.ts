@@ -25,15 +25,8 @@ export interface ReweightOptions {
 export class Reweight {
   // TODO: add functionality to reduce image size and jpeg quality
   compressImageFile(fileImage: File, limits: ReweightLimits, options: ReweightOptions) {
-
-    if (limits.fileSizeMb && !options.imageSizeRatio)
-      options.imageSizeRatio = 0.99;
-    if (limits.fileSizeMb && !options.jpegQualityRatio)
-      options.jpegQualityRatio = 0.99;
-    let imageSizeRatio = options.imageSizeRatio || 0.99,
-        jpegQualityRatio = options.jpegQualityRatio? options.jpegQualityRatio: 0.99;
-    // TODO: refactor all these variables default values, by reviewing its actual meaning
-    const fullLimits = this.getCompleteInputLimits(limits);
+    const fullOptions = this.getCompleteInputOptions(options),
+          fullLimits = this.getCompleteInputLimits(limits);
     let imageSize: number = <number>fullLimits.imageSize,
         jpegQuality: number = <number>fullLimits.jpegQuality;
         // Them can be safely cast thanks to getCompleteInputLimits
@@ -45,9 +38,9 @@ export class Reweight {
       expand((base64image: Base64image)=>{
         let blob = convert.getBlobFromBase64(base64image);
         if (blob.size > <number>fullLimits.fileSizeMb) {
-          // Cast can be safely done thanks to getCompleteInputLimits
-          imageSize *= imageSizeRatio;
-          jpegQuality *= jpegQualityRatio;
+          imageSize *= <number>fullOptions.imageSizeRatio;
+          jpegQuality *= <number>fullOptions.jpegQualityRatio;
+          // Casts can be safely done thanks to getCompleteInputLimits
           return this.compressBase64Image(base64image, imageSize, jpegQuality);
         } else
           return EMPTY;
@@ -67,6 +60,14 @@ export class Reweight {
     limits.imageSize = limits.imageSize?? Infinity;
     limits.jpegQuality = 1;
     return limits;
+  }
+
+  private getCompleteInputOptions(options: ReweightOptions) {
+    options.imageSizeRatio = options.imageSizeRatio?? 0.99;
+    options.jpegQualityRatio = options.jpegQualityRatio?? 0.99;
+    options.coverMaxImageSize = options.coverMaxImageSize?? false;  // Not really needed. Added only
+                                                                    // for code readability
+    return options;
   }
 
   private compressBase64Image(
