@@ -55,7 +55,6 @@ export class Reweight {
     }
   }
 
-  // TODO: add functionality to reduce image size and jpeg quality
   compressImageFile(fileImage: File) {
     return this.CONVERT.getBase64FromBlob(fileImage).pipe(
       mergeMap((base64data: Base64data)=>{
