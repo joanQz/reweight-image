@@ -17,13 +17,13 @@ export interface ReweightLimits {
   jpegQuality?: number
 }
 
-export interface ReweightOptions {
+export interface ReweightImageOptions {
   coverMaxImageSize?: boolean,
   imageSizeRatio?: number,
   jpegQualityRatio?: number
 }
 
-export class Reweight {
+export class ReweightImage {
   readonly BYTES_IN_ONEMB = 1000000;
   readonly DEFAULT_REDUCE_RATIO = 0.99;
   readonly CONVERT = new Convert();
@@ -40,7 +40,7 @@ export class Reweight {
     jpegQualityRatio: number
   }
 
-  constructor(limits: ReweightLimits, options?: ReweightOptions) {
+  constructor(limits: ReweightLimits, options?: ReweightImageOptions) {
     const fullOptions = this.getCompleteInputOptions(options),
           fullLimits = this.getCompleteInputLimits(limits);
     this.limits = {
@@ -106,7 +106,7 @@ export class Reweight {
     return limits;
   }
 
-  private getCompleteInputOptions(options?: ReweightOptions) {
+  private getCompleteInputOptions(options?: ReweightImageOptions) {
     if(!options) options = {};
     options.imageSizeRatio = options.imageSizeRatio?? this.DEFAULT_REDUCE_RATIO;
     options.jpegQualityRatio = options.jpegQualityRatio?? this.DEFAULT_REDUCE_RATIO;
