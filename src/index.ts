@@ -26,6 +26,7 @@ export interface ReweightOptions {
 export class Reweight {
   readonly BYTES_IN_ONEMB = 1000000;
   readonly DEFAULT_REDUCE_RATIO = 0.99;
+  readonly CONVERT = new Convert();
 
   // TODO: add functionality to reduce image size and jpeg quality
   compressImageFile(fileImage: File, limits: ReweightLimits, options: ReweightOptions) {
@@ -35,8 +36,7 @@ export class Reweight {
         imageSize: number = <number>fullLimits.imageSize,
         jpegQuality: number = <number>fullLimits.jpegQuality;
         // Them can be safely cast thanks to getCompleteInputLimits
-    let convert = new Convert();
-    return convert.getBase64FromBlob(fileImage).pipe(
+    return this.CONVERT.getBase64FromBlob(fileImage).pipe(
       mergeMap((base64data: Base64data)=>{
           return this.compressBase64Image(base64data, imageSize, jpegQuality);
       }),
@@ -44,17 +44,16 @@ export class Reweight {
         return this.reweightBase64Image(base64image, fileSizeMb, imageSize, jpegQuality, fullOptions);
       }),
       map((base64image: Base64image) => {
-        let blob = convert.getBlobFromBase64(base64image.base64data);
+        let blob = this.CONVERT.getBlobFromBase64(base64image.base64data);
         return new File([blob], fileImage.name, {type: 'image/jpeg'});
       })
     );
   }
 
   private reweightBase64Image(base64image: Base64image, fileSizeMb: number, imageSize: number, jpegQuality: number, fullOptions: ReweightOptions) {
-    let convert = new Convert();
     return of(base64image).pipe(
       expand((base64image: Base64image)=>{
-        let blob = convert.getBlobFromBase64(base64image.base64data);
+        let blob = this.CONVERT.getBlobFromBase64(base64image.base64data);
         if (imageSize == Infinity)
           imageSize = Math.max(base64image.width, base64image.height);
         if (blob.size > fileSizeMb) {
