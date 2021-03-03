@@ -10,41 +10,42 @@ type Base64image = string;
 
 export { Convert };
 
-export class Reweight {
+export interface ReweightLimits {
+  fileSizeMb?: number,
+  imageSize?: number,
+  jpegQuality?: number
+}
 
+export interface ReweightOptions {
+  coverMaxImageSize?: boolean,
+  imageSizeRatio?: number,
+  jpegQualityRatio?: number
+}
+
+export class Reweight {
   // TODO: add functionality to reduce image size and jpeg quality
-  compressImageFile(
-                      fileImage: File,
-                      limits: {
-                        maxImageSize?: number,
-                        coverMaxImageSize?: boolean,
-                        jpegQuality?: number,
-                        maxFileSizeMb?: number,
-                        imageSizeRatio?: number,
-                        jpegQualityRatio?: number
-                      }
-                    ) {
-    let maxFileSize = limits.maxFileSizeMb? limits.maxFileSizeMb*1000000 : 10000000000000;
-    if (limits.maxFileSizeMb && !limits.imageSizeRatio)
-      limits.imageSizeRatio = 0.99;
-    if (limits.maxFileSizeMb && !limits.jpegQualityRatio)
-      limits.jpegQualityRatio = 0.99;
-    let maxImageSize = limits.maxImageSize || 10000, //provisional
+  compressImageFile(fileImage: File, limits: ReweightLimits, options: ReweightOptions) {
+    let fileSize = limits.fileSizeMb? limits.fileSizeMb*1000000 : 10000000000000;
+    if (limits.fileSizeMb && !options.imageSizeRatio)
+      options.imageSizeRatio = 0.99;
+    if (limits.fileSizeMb && !options.jpegQualityRatio)
+      options.jpegQualityRatio = 0.99;
+    let imageSize = limits.imageSize || 10000, //provisional
         jpegQuality = limits.jpegQuality || 1,
-        imageSizeRatio = limits.imageSizeRatio || 0.99,
-        jpegQualityRatio = limits.jpegQualityRatio? limits.jpegQualityRatio: 0.99;
+        imageSizeRatio = options.imageSizeRatio || 0.99,
+        jpegQualityRatio = options.jpegQualityRatio? options.jpegQualityRatio: 0.99;
     // TODO: refactor all these variables default values, by reviewing its actual meaning
     let convert = new Convert();
     return convert.getBase64FromBlob(fileImage).pipe(
       mergeMap((base64image: Base64image)=>{
-          return this.compressBase64Image(base64image, maxImageSize, jpegQuality);
+          return this.compressBase64Image(base64image, imageSize, jpegQuality);
       }),
       expand((base64image: Base64image)=>{
         let blob = convert.getBlobFromBase64(base64image);
-        if (blob.size > maxFileSize) {
-          maxImageSize *= imageSizeRatio;
+        if (blob.size > fileSize) {
+          imageSize *= imageSizeRatio;
           jpegQuality *= jpegQualityRatio;
-          return this.compressBase64Image(base64image, maxImageSize, jpegQuality);
+          return this.compressBase64Image(base64image, imageSize, jpegQuality);
         } else
           return EMPTY;
       }),
@@ -60,13 +61,13 @@ export class Reweight {
 
   private compressBase64Image(
                                 base64Image: string,
-                                maxImageSize: number,
+                                imageSize: number,
                                 jpegQuality: number
                               ): Observable<Base64image> {
     return new Observable(observer=>{
       let imageElement: HTMLImageElement = document.createElement('img');
       imageElement.onload = () => {
-        let resizedBase64Image: Base64image = this.resizeImageElement(imageElement, maxImageSize, jpegQuality);
+        let resizedBase64Image: Base64image = this.resizeImageElement(imageElement, imageSize, jpegQuality);
         observer.next(resizedBase64Image);
       }
       imageElement.src = base64Image;
@@ -75,11 +76,11 @@ export class Reweight {
 
   private resizeImageElement(
                               imageElement: HTMLImageElement,
-                              maxImageSize: number,
+                              imageSize: number,
                               jpegQuality: number
                             ): Base64image {
     const {width: imgWidth, height: imgHeight} = imageElement,
-          scale = this.getScale(maxImageSize, imgWidth, imgHeight, false),
+          scale = this.getScale(imageSize, imgWidth, imgHeight, false),
           canvas = this.createCanvasWithFinalDimensions(scale * imgWidth, scale * imgHeight);
     this.fillCanvasWithImage(canvas, scale, imageElement);
     return canvas.toDataURL('image/jpeg', jpegQuality);
@@ -99,11 +100,11 @@ export class Reweight {
     context.drawImage(imageElement, 0, 0);
   }
 
-  private  getScale(maxImageSize: number, imgWidth: number, imgHeight: number, cover: boolean) {
+  private  getScale(imageSize: number, imgWidth: number, imgHeight: number, cover: boolean) {
     const referenceDimension =  cover
                               ? Math.min(imgWidth, imgHeight)
                               : Math.max(imgWidth, imgHeight);
-    const scale = maxImageSize / referenceDimension;
+    const scale = imageSize / referenceDimension;
     if (scale > 1)
       return 1;
 
