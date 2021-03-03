@@ -25,16 +25,18 @@ export interface ReweightOptions {
 export class Reweight {
   // TODO: add functionality to reduce image size and jpeg quality
   compressImageFile(fileImage: File, limits: ReweightLimits, options: ReweightOptions) {
-    let fileSize = limits.fileSizeMb? limits.fileSizeMb*1000000 : 10000000000000;
+
     if (limits.fileSizeMb && !options.imageSizeRatio)
       options.imageSizeRatio = 0.99;
     if (limits.fileSizeMb && !options.jpegQualityRatio)
       options.jpegQualityRatio = 0.99;
-    let imageSize = limits.imageSize || 10000, //provisional
-        jpegQuality = limits.jpegQuality || 1,
-        imageSizeRatio = options.imageSizeRatio || 0.99,
+    let imageSizeRatio = options.imageSizeRatio || 0.99,
         jpegQualityRatio = options.jpegQualityRatio? options.jpegQualityRatio: 0.99;
     // TODO: refactor all these variables default values, by reviewing its actual meaning
+    const fullLimits = this.getCompleteInputLimits(limits);
+    let imageSize: number = <number>fullLimits.imageSize,
+        jpegQuality: number = <number>fullLimits.jpegQuality;
+        // Them can be safely cast thanks to getCompleteInputLimits
     let convert = new Convert();
     return convert.getBase64FromBlob(fileImage).pipe(
       mergeMap((base64image: Base64image)=>{
@@ -42,7 +44,8 @@ export class Reweight {
       }),
       expand((base64image: Base64image)=>{
         let blob = convert.getBlobFromBase64(base64image);
-        if (blob.size > fileSize) {
+        if (blob.size > <number>fullLimits.fileSizeMb) {
+          // Cast can be safely done thanks to getCompleteInputLimits
           imageSize *= imageSizeRatio;
           jpegQuality *= jpegQualityRatio;
           return this.compressBase64Image(base64image, imageSize, jpegQuality);
@@ -57,6 +60,13 @@ export class Reweight {
         return new File([blob], fileImage.name, {type: 'image/jpeg'});
       })
     );
+  }
+
+  private getCompleteInputLimits(limits: ReweightLimits): ReweightLimits {
+    limits.fileSizeMb = limits.fileSizeMb?? Infinity;
+    limits.imageSize = limits.imageSize?? Infinity;
+    limits.jpegQuality = 1;
+    return limits;
   }
 
   private compressBase64Image(
