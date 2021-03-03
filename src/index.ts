@@ -62,7 +62,7 @@ export class Reweight {
           return this.compressBase64Image(base64data, this.limits.imageSize, this.limits.jpegQuality);
       }),
       mergeMap((base64image: Base64image) => {
-        return this.reweightBase64Image(base64image, this.limits.fileSizeMb, this.limits.imageSize, this.limits.jpegQuality, this.options);
+        return this.reweightBase64Image(base64image);
       }),
       map((base64image: Base64image) => {
         let blob = this.CONVERT.getBlobFromBase64(base64image.base64data);
@@ -71,15 +71,17 @@ export class Reweight {
     );
   }
 
-  private reweightBase64Image(base64image: Base64image, fileSizeMb: number, imageSize: number, jpegQuality: number, fullOptions: ReweightOptions) {
+  private reweightBase64Image(base64image: Base64image): Observable<Base64image> {
+    let imageSize = this.limits.imageSize,
+        jpegQuality = this.limits.jpegQuality;
     return of(base64image).pipe(
       expand((base64image: Base64image)=>{
         let blob = this.CONVERT.getBlobFromBase64(base64image.base64data);
         if (imageSize == Infinity)
           imageSize = Math.max(base64image.width, base64image.height);
-        if (blob.size > fileSizeMb) {
-          imageSize *= <number>fullOptions.imageSizeRatio;
-          jpegQuality *= <number>fullOptions.jpegQualityRatio;
+        if (blob.size > this.limits.fileSizeMb) {
+          imageSize *= <number>this.options.imageSizeRatio;
+          jpegQuality *= <number>this.options.jpegQualityRatio;
           // Casts can be safely done thanks to getCompleteInputLimits
           return this.compressBase64Image(base64image.base64data, imageSize, jpegQuality);
         } else
