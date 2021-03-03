@@ -8,6 +8,8 @@ import { Convert } from './convert';
 
 type Base64image = string;
 
+export { Convert };
+
 export class Reweight {
 
   // TODO: add functionality to reduce image size and jpeg quality
