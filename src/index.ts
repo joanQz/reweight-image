@@ -79,14 +79,13 @@ export class Reweight {
                               jpegQuality: number
                             ): Base64image {
     const {width: imgWidth, height: imgHeight} = imageElement;
-    const {scale: scale, xScale: xScale, yScale: yScale} =
-                                      this.getScales(maxImageSize, imgWidth, imgHeight, true);
+    const oneScale = this.getScale(maxImageSize, imgWidth, imgHeight, false);
     const canvas: HTMLCanvasElement = document.createElement('canvas');
-    canvas.width  = xScale;
-    canvas.height = yScale;
+    canvas.width  = oneScale * imgWidth;
+    canvas.height = oneScale * imgHeight;
     let context: CanvasRenderingContext2D = <CanvasRenderingContext2D>(canvas.getContext('2d'));
     // type can be safely cast to CanvasRenderingContext2D as '2d' is a supported identifier
-    context.scale(scale, scale);
+    context.scale(oneScale, oneScale);
     context.drawImage(imageElement, 0, 0);
     return canvas.toDataURL('image/jpeg', jpegQuality);
   }
@@ -99,6 +98,17 @@ export class Reweight {
     if (scale > 1)
       scale = 1;
     return {scale: scale, xScale: scale * imgWidth, yScale: scale * imgHeight};
+  }
+
+  private  getScale(maxImageSize: number, imgWidth: number, imgHeight: number, cover: boolean) {
+    const referenceDimension =  cover
+                              ? Math.min(imgWidth, imgHeight)
+                              : Math.max(imgWidth, imgHeight);
+    const scale = maxImageSize / referenceDimension;
+    if (scale > 1)
+      return 1;
+
+    return scale;
   }
 
 }
