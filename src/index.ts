@@ -1,12 +1,10 @@
 import { EMPTY, Observable } from 'rxjs';
 import { expand, map, mergeMap } from 'rxjs/operators';
-
-import { atob } from 'abab';
-
 import Blob = require('cross-blob');  // do not convert to default, test passes but throws an
                                       // error when package is imported
 // https://stackoverflow.com/questions/14653349/node-js-cant-create-blobs
 // Richie Bendall's solution
+import { Convert } from './convert';
 
 type Base64image = string;
 
@@ -34,12 +32,13 @@ export class Reweight {
         imageSizeRatio = limits.imageSizeRatio || 0.99,
         jpegQualityRatio = limits.jpegQualityRatio? limits.jpegQualityRatio: 0.99;
     // TODO: refactor all these variables default values, by reviewing its actual meaning
-    return this.getBase64FromBlob(fileImage).pipe(
+    let convert = new Convert();
+    return convert.getBase64FromBlob(fileImage).pipe(
       mergeMap((base64image: Base64image)=>{
           return this.compressBase64Image(base64image, maxImageSize, jpegQuality);
       }),
       expand((base64image: Base64image)=>{
-        let blob = this.getBlobFromBase64(base64image);
+        let blob = convert.getBlobFromBase64(base64image);
         if (blob.size > maxFileSize) {
           maxImageSize *= imageSizeRatio;
           jpegQuality *= jpegQualityRatio;
@@ -51,7 +50,7 @@ export class Reweight {
         // seemingly there's a bug in rxjs (to confirm): declaring ret as Base64image (string)
         // throws a lint and compiling error. Workaround is declaring as any and casting it in the
         // next line
-        let blob = this.getBlobFromBase64(<Base64image>base64image);
+        let blob = convert.getBlobFromBase64(<Base64image>base64image);
         return new File([blob], fileImage.name, {type: 'image/jpeg'});
       })
     );
@@ -100,45 +99,4 @@ export class Reweight {
     return {scale: scale, xScale: scale * imgWidth, yScale: scale * imgHeight};
   }
 
-
-  getBase64FromBlob(image: Blob): Observable<Base64image> {
-    let reader = new FileReader();
-    return new Observable(observer=>{
-      reader.onload = () => {
-        let res = reader.result;
-        observer.next(<Base64image>res);
-        //res can be safely cast to string as we use readAsDataURL method
-      }
-      reader.readAsDataURL(image);
-    });
-  }
-
-
-  // returned file is in jpeg format
-  // From https://stackoverflow.com/questions/21227078/convert-base64-to-image-in-javascript-jquery
-  // with litle modifications
-  getBlobFromBase64(base64image: Base64image): Blob {
-    let head = base64image.indexOf('base64,');
-    if (head !== -1)
-      base64image = base64image.substr(head+7);
-    let sliceSize = 1024,
-        byteCharacters = <Base64image>atob(base64image),
-        // type can be safely cast to Base64image unless base64image is also null
-        bytesLength = byteCharacters.length,
-        slicesCount = Math.ceil(bytesLength / sliceSize),
-        byteArrays = new Array(slicesCount);
-
-    for (let sliceIndex = 0; sliceIndex < slicesCount; ++sliceIndex) {
-        let begin = sliceIndex * sliceSize,
-            end = Math.min(begin + sliceSize, bytesLength),
-
-            bytes = new Array(end - begin);
-        for (let offset = begin, i = 0; offset < end; ++i, ++offset) {
-            bytes[i] = byteCharacters[offset].charCodeAt(0);
-        }
-        byteArrays[sliceIndex] = new Uint8Array(bytes);
-    }
-    let blob = new Blob(byteArrays, { type: 'image/jpeg' });
-    return blob;
-  }
 }
