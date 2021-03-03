@@ -28,20 +28,41 @@ export class Reweight {
   readonly DEFAULT_REDUCE_RATIO = 0.99;
   readonly CONVERT = new Convert();
 
-  // TODO: add functionality to reduce image size and jpeg quality
-  compressImageFile(fileImage: File, limits: ReweightLimits, options: ReweightOptions) {
+  limits: {
+    fileSizeMb: number,
+    imageSize: number,
+    jpegQuality: number
+  }
+
+  options: {
+    coverMaxImageSize: boolean,
+    imageSizeRatio: number,
+    jpegQualityRatio: number
+  }
+
+  constructor(limits: ReweightLimits, options?: ReweightOptions) {
     const fullOptions = this.getCompleteInputOptions(options),
           fullLimits = this.getCompleteInputLimits(limits);
-    let fileSizeMb: number = <number>fullLimits.fileSizeMb * this.BYTES_IN_ONEMB,
-        imageSize: number = <number>fullLimits.imageSize,
-        jpegQuality: number = <number>fullLimits.jpegQuality;
-        // Them can be safely cast thanks to getCompleteInputLimits
+    this.limits = {
+      fileSizeMb: <number>fullLimits.fileSizeMb * this.BYTES_IN_ONEMB,
+      imageSize: <number>fullLimits.imageSize,
+      jpegQuality: <number>fullLimits.jpegQuality
+    };
+    this.options = {
+      coverMaxImageSize: <boolean>fullOptions.coverMaxImageSize,
+      imageSizeRatio:  <number>fullOptions.imageSizeRatio,
+      jpegQualityRatio:  <number>fullOptions.jpegQualityRatio
+    }
+  }
+
+  // TODO: add functionality to reduce image size and jpeg quality
+  compressImageFile(fileImage: File) {
     return this.CONVERT.getBase64FromBlob(fileImage).pipe(
       mergeMap((base64data: Base64data)=>{
-          return this.compressBase64Image(base64data, imageSize, jpegQuality);
+          return this.compressBase64Image(base64data, this.limits.imageSize, this.limits.jpegQuality);
       }),
       mergeMap((base64image: Base64image) => {
-        return this.reweightBase64Image(base64image, fileSizeMb, imageSize, jpegQuality, fullOptions);
+        return this.reweightBase64Image(base64image, this.limits.fileSizeMb, this.limits.imageSize, this.limits.jpegQuality, this.options);
       }),
       map((base64image: Base64image) => {
         let blob = this.CONVERT.getBlobFromBase64(base64image.base64data);
@@ -67,14 +88,16 @@ export class Reweight {
     );
   }
 
-  private getCompleteInputLimits(limits: ReweightLimits): ReweightLimits {
+  private getCompleteInputLimits(limits?: ReweightLimits): ReweightLimits {
+    if (!limits) limits = {};
     limits.fileSizeMb = limits.fileSizeMb?? Infinity;
     limits.imageSize = limits.imageSize?? Infinity;
     limits.jpegQuality = 1;
     return limits;
   }
 
-  private getCompleteInputOptions(options: ReweightOptions) {
+  private getCompleteInputOptions(options?: ReweightOptions) {
+    if(!options) options = {};
     options.imageSizeRatio = options.imageSizeRatio?? this.DEFAULT_REDUCE_RATIO;
     options.jpegQualityRatio = options.jpegQualityRatio?? this.DEFAULT_REDUCE_RATIO;
     options.coverMaxImageSize = options.coverMaxImageSize?? false;  // Not really needed. Added only
