@@ -1,4 +1,4 @@
-import { EMPTY, Observable } from 'rxjs';
+import { EMPTY, Observable, of } from 'rxjs';
 import { expand, map, mergeMap } from 'rxjs/operators';
 import Blob = require('cross-blob');  // do not convert to default, test passes but throws an
                                       // error when package is imported
@@ -40,6 +40,19 @@ export class Reweight {
       mergeMap((base64data: Base64data)=>{
           return this.compressBase64Image(base64data, imageSize, jpegQuality);
       }),
+      mergeMap((base64image: Base64image) => {
+        return this.reweightBase64Image(base64image, fileSizeMb, imageSize, jpegQuality, fullOptions);
+      }),
+      map((base64image: Base64image) => {
+        let blob = convert.getBlobFromBase64(base64image.base64data);
+        return new File([blob], fileImage.name, {type: 'image/jpeg'});
+      })
+    );
+  }
+
+  private reweightBase64Image(base64image: Base64image, fileSizeMb: number, imageSize: number, jpegQuality: number, fullOptions: ReweightOptions) {
+    let convert = new Convert();
+    return of(base64image).pipe(
       expand((base64image: Base64image)=>{
         let blob = convert.getBlobFromBase64(base64image.base64data);
         if (imageSize == Infinity)
@@ -51,13 +64,6 @@ export class Reweight {
           return this.compressBase64Image(base64image.base64data, imageSize, jpegQuality);
         } else
           return EMPTY;
-      }),
-      map((base64image: any) => {
-        // seemingly there's a bug in rxjs (to confirm): declaring ret as Base64image (string)
-        // throws a lint and compiling error. Workaround is declaring as any and casting it in the
-        // next line. Far from ideal as it can hide type bugs
-        let blob = convert.getBlobFromBase64((<Base64image>base64image).base64data);
-        return new File([blob], fileImage.name, {type: 'image/jpeg'});
       })
     );
   }
