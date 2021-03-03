@@ -6,7 +6,8 @@ import Blob = require('cross-blob');  // do not convert to default, test passes 
 // Richie Bendall's solution
 import { Convert } from './convert';
 
-type Base64image = string;
+type Base64data = string;
+type Base64image = {base64data: Base64data, width: number, height: number};
 
 export { Convert };
 
@@ -23,33 +24,39 @@ export interface ReweightOptions {
 }
 
 export class Reweight {
+  readonly BYTES_IN_ONEMB = 1000000;
+  readonly DEFAULT_REDUCE_RATIO = 0.99;
+
   // TODO: add functionality to reduce image size and jpeg quality
   compressImageFile(fileImage: File, limits: ReweightLimits, options: ReweightOptions) {
     const fullOptions = this.getCompleteInputOptions(options),
           fullLimits = this.getCompleteInputLimits(limits);
-    let imageSize: number = <number>fullLimits.imageSize,
+    let fileSizeMb: number = <number>fullLimits.fileSizeMb * this.BYTES_IN_ONEMB,
+        imageSize: number = <number>fullLimits.imageSize,
         jpegQuality: number = <number>fullLimits.jpegQuality;
         // Them can be safely cast thanks to getCompleteInputLimits
     let convert = new Convert();
     return convert.getBase64FromBlob(fileImage).pipe(
-      mergeMap((base64image: Base64image)=>{
-          return this.compressBase64Image(base64image, imageSize, jpegQuality);
+      mergeMap((base64data: Base64data)=>{
+          return this.compressBase64Image(base64data, imageSize, jpegQuality);
       }),
       expand((base64image: Base64image)=>{
-        let blob = convert.getBlobFromBase64(base64image);
-        if (blob.size > <number>fullLimits.fileSizeMb) {
+        let blob = convert.getBlobFromBase64(base64image.base64data);
+        if (imageSize == Infinity)
+          imageSize = Math.max(base64image.width, base64image.height);
+        if (blob.size > fileSizeMb) {
           imageSize *= <number>fullOptions.imageSizeRatio;
           jpegQuality *= <number>fullOptions.jpegQualityRatio;
           // Casts can be safely done thanks to getCompleteInputLimits
-          return this.compressBase64Image(base64image, imageSize, jpegQuality);
+          return this.compressBase64Image(base64image.base64data, imageSize, jpegQuality);
         } else
           return EMPTY;
       }),
       map((base64image: any) => {
         // seemingly there's a bug in rxjs (to confirm): declaring ret as Base64image (string)
         // throws a lint and compiling error. Workaround is declaring as any and casting it in the
-        // next line
-        let blob = convert.getBlobFromBase64(<Base64image>base64image);
+        // next line. Far from ideal as it can hide type bugs
+        let blob = convert.getBlobFromBase64((<Base64image>base64image).base64data);
         return new File([blob], fileImage.name, {type: 'image/jpeg'});
       })
     );
@@ -63,25 +70,26 @@ export class Reweight {
   }
 
   private getCompleteInputOptions(options: ReweightOptions) {
-    options.imageSizeRatio = options.imageSizeRatio?? 0.99;
-    options.jpegQualityRatio = options.jpegQualityRatio?? 0.99;
+    options.imageSizeRatio = options.imageSizeRatio?? this.DEFAULT_REDUCE_RATIO;
+    options.jpegQualityRatio = options.jpegQualityRatio?? this.DEFAULT_REDUCE_RATIO;
     options.coverMaxImageSize = options.coverMaxImageSize?? false;  // Not really needed. Added only
                                                                     // for code readability
     return options;
   }
 
   private compressBase64Image(
-                                base64Image: string,
+                                base64data: Base64data,
                                 imageSize: number,
                                 jpegQuality: number
                               ): Observable<Base64image> {
     return new Observable(observer=>{
       let imageElement: HTMLImageElement = document.createElement('img');
       imageElement.onload = () => {
-        let compressedBase64Image: Base64image = this.compressImageElement(imageElement, imageSize, jpegQuality);
+        let compressedBase64Image: Base64image =
+              this.compressImageElement(imageElement, imageSize, jpegQuality);
         observer.next(compressedBase64Image);
       }
-      imageElement.src = base64Image;
+      imageElement.src = base64data;
     });
   }
 
@@ -94,7 +102,7 @@ export class Reweight {
           scale = this.getScale(imageSize, imgWidth, imgHeight, false),
           canvas = this.createCanvasWithFinalDimensions(scale * imgWidth, scale * imgHeight);
     this.fillCanvasWithImage(canvas, scale, imageElement);
-    return canvas.toDataURL('image/jpeg', jpegQuality);
+    return {base64data: canvas.toDataURL('image/jpeg', jpegQuality), width: imgWidth, height: imgHeight};
   }
 
   private createCanvasWithFinalDimensions(width: number, height: number): HTMLCanvasElement {
