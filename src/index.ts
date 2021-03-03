@@ -77,14 +77,14 @@ export class Reweight {
     return new Observable(observer=>{
       let imageElement: HTMLImageElement = document.createElement('img');
       imageElement.onload = () => {
-        let resizedBase64Image: Base64image = this.resizeImageElement(imageElement, imageSize, jpegQuality);
-        observer.next(resizedBase64Image);
+        let compressedBase64Image: Base64image = this.compressImageElement(imageElement, imageSize, jpegQuality);
+        observer.next(compressedBase64Image);
       }
       imageElement.src = base64Image;
     });
   }
 
-  private resizeImageElement(
+  private compressImageElement(
                               imageElement: HTMLImageElement,
                               imageSize: number,
                               jpegQuality: number
