@@ -47,10 +47,13 @@ test('get scales for 4000x3000 to max 5000 cover returns {1, 4000, 3000}', ()=>{
   expect(yScale).toBe(3000);
 });
 
-// test('get scales for 4000x3000 to max 1000 not cover returns {0.25, 1000, 750}', ()=>{
-//   const converter = new reweight.Reweight();
-//   let getScales = converter['getScales'];
-//   console.log(getScales(1000, 4000, 3000, false));
-// });
+test('get scales for 4000x3000 to max 1000 not cover returns {0.25, 1000, 750}', ()=>{
+  const converter = new reweight.Reweight();
+  let getScales = converter['getScales'];
+  const {scale: scale, xScale: xScale, yScale: yScale } = getScales(1000, 4000, 3000, false);
+  expect(scale).toBe(0.25);
+  expect(xScale).toBe(1000);
+  expect(yScale).toBe(750);
+});
 
 // TODO: test main function with a headless browser

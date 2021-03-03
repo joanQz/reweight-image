@@ -91,8 +91,10 @@ export class Reweight {
   }
 
   private  getScales(maxImageSize: number, imgWidth: number, imgHeight: number, cover: boolean) {
-    let referenceDimension = Math.min(imgWidth, imgHeight),
-        scale = maxImageSize / referenceDimension;
+    let referenceDimension =  cover
+                              ? Math.min(imgWidth, imgHeight)
+                              : Math.max(imgWidth, imgHeight);
+    let scale = maxImageSize / referenceDimension;
     if (scale > 1)
       scale = 1;
     return {scale: scale, xScale: scale * imgWidth, yScale: scale * imgHeight};
