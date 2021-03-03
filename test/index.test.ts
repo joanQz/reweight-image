@@ -38,6 +38,15 @@ test('get scales for 4000x3000 to max 1000 cover returns {0.33, 1333, 1000}', ()
   expect(yScale).toBe(1000);
 });
 
+test('get scales for 4000x3000 to max 5000 cover returns {1, 4000, 3000}', ()=>{
+  const converter = new reweight.Reweight();
+  let getScales = converter['getScales'];
+  const {scale: scale, xScale: xScale, yScale: yScale } = getScales(5000, 4000, 3000, true);
+  expect(scale).toBe(1);
+  expect(xScale).toBe(4000);
+  expect(yScale).toBe(3000);
+});
+
 // test('get scales for 4000x3000 to max 1000 not cover returns {0.25, 1000, 750}', ()=>{
 //   const converter = new reweight.Reweight();
 //   let getScales = converter['getScales'];

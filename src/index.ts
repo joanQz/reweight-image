@@ -91,28 +91,11 @@ export class Reweight {
   }
 
   private  getScales(maxImageSize: number, imgWidth: number, imgHeight: number, cover: boolean) {
-    let widthScale  = maxImageSize / imgWidth,
-        heightScale = maxImageSize / imgHeight;
-    let scale = Math.max(widthScale, heightScale);
-
-    if (scale > 1) {
-      maxImageSize = Math.min(imgWidth, imgHeight)
-      scale = 1
-    }
-
-    const growthScale: number = Math.max(widthScale, heightScale) / Math.min(widthScale, heightScale);
-    let   xScale: number,
-          yScale: number;
-
-    if (imgWidth > imgHeight) {
-      xScale = growthScale;
-      yScale = 1;
-    } else {
-      xScale = 1;
-      yScale = growthScale;
-    }
-
-    return {scale: scale, xScale: xScale * maxImageSize, yScale: yScale * maxImageSize};
+    let referenceDimension = Math.min(imgWidth, imgHeight),
+        scale = maxImageSize / referenceDimension;
+    if (scale > 1)
+      scale = 1;
+    return {scale: scale, xScale: scale * imgWidth, yScale: scale * imgHeight};
   }
 
 
