@@ -78,26 +78,25 @@ export class Reweight {
                               maxImageSize: number,
                               jpegQuality: number
                             ): Base64image {
-    const {width: imgWidth, height: imgHeight} = imageElement;
-    const oneScale = this.getScale(maxImageSize, imgWidth, imgHeight, false);
-    const canvas: HTMLCanvasElement = document.createElement('canvas');
-    canvas.width  = oneScale * imgWidth;
-    canvas.height = oneScale * imgHeight;
-    let context: CanvasRenderingContext2D = <CanvasRenderingContext2D>(canvas.getContext('2d'));
-    // type can be safely cast to CanvasRenderingContext2D as '2d' is a supported identifier
-    context.scale(oneScale, oneScale);
-    context.drawImage(imageElement, 0, 0);
+    const {width: imgWidth, height: imgHeight} = imageElement,
+          scale = this.getScale(maxImageSize, imgWidth, imgHeight, false),
+          canvas = this.createCanvasWithFinalDimensions(scale * imgWidth, scale * imgHeight);
+    this.fillCanvasWithImage(canvas, scale, imageElement);
     return canvas.toDataURL('image/jpeg', jpegQuality);
   }
 
-  private  getScales(maxImageSize: number, imgWidth: number, imgHeight: number, cover: boolean) {
-    let referenceDimension =  cover
-                              ? Math.min(imgWidth, imgHeight)
-                              : Math.max(imgWidth, imgHeight);
-    let scale = maxImageSize / referenceDimension;
-    if (scale > 1)
-      scale = 1;
-    return {scale: scale, xScale: scale * imgWidth, yScale: scale * imgHeight};
+  private createCanvasWithFinalDimensions(width: number, height: number): HTMLCanvasElement {
+    const canvas: HTMLCanvasElement = document.createElement('canvas');
+    canvas.width  = width;
+    canvas.height = height;
+    return canvas;
+  }
+
+  private fillCanvasWithImage(canvas: HTMLCanvasElement, scale: number, imageElement: HTMLImageElement) {
+    let context: CanvasRenderingContext2D = <CanvasRenderingContext2D>(canvas.getContext('2d'));
+    // type can be safely cast to CanvasRenderingContext2D as '2d' is a supported identifier
+    context.scale(scale, scale);
+    context.drawImage(imageElement, 0, 0);
   }
 
   private  getScale(maxImageSize: number, imgWidth: number, imgHeight: number, cover: boolean) {
