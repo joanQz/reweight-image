@@ -1,4 +1,4 @@
-import { EMPTY, Observable, of } from 'rxjs';
+import { EMPTY, Observable, Observer, of } from 'rxjs';
 import { expand, map, mergeMap } from 'rxjs/operators';
 import Blob = require('cross-blob');  // do not convert to default, test passes but throws an
                                       // error when package is imported
@@ -71,23 +71,32 @@ export class Reweight {
     );
   }
 
+  // Recursively calls compressBase64Image until file size is under limits.fileSizeMb
   private reweightBase64Image(base64image: Base64image): Observable<Base64image> {
     let imageSize = this.limits.imageSize,
         jpegQuality = this.limits.jpegQuality;
-    return of(base64image).pipe(
-      expand((base64image: Base64image)=>{
-        let blob = this.CONVERT.getBlobFromBase64(base64image.base64data);
-        if (imageSize == Infinity)
-          imageSize = Math.max(base64image.width, base64image.height);
-        if (blob.size > this.limits.fileSizeMb) {
-          imageSize *= <number>this.options.imageSizeRatio;
-          jpegQuality *= <number>this.options.jpegQualityRatio;
-          // Casts can be safely done thanks to getCompleteInputLimits
-          return this.compressBase64Image(base64image.base64data, imageSize, jpegQuality);
-        } else
-          return EMPTY;
-      })
-    );
+    return new Observable((observer: Observer<Base64image>)=>{
+      of(base64image).pipe(
+        expand((base64image: Base64image)=>{
+          let blob = this.CONVERT.getBlobFromBase64(base64image.base64data);
+          if (imageSize == Infinity)
+            imageSize = Math.max(base64image.width, base64image.height);
+          if (blob.size > this.limits.fileSizeMb) {
+            imageSize *= <number>this.options.imageSizeRatio;
+            jpegQuality *= <number>this.options.jpegQualityRatio;
+            // Casts can be safely done thanks to getCompleteInputLimits
+            return this.compressBase64Image(base64image.base64data, imageSize, jpegQuality);
+          } else
+            return EMPTY;
+        })
+      ).subscribe({
+        next: (base64image: Base64image)=>{
+          let blob = this.CONVERT.getBlobFromBase64(base64image.base64data);
+          if (blob.size < this.limits.fileSizeMb)
+            observer.next(base64image);
+        }
+      });
+    });
   }
 
   private getCompleteInputLimits(limits?: ReweightLimits): ReweightLimits {
