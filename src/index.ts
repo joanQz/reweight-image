@@ -11,9 +11,9 @@ type Base64image = {base64data: Base64data, width: number, height: number};
 
 export { Convert };
 
-export interface ReweightLimits {
+export interface ReweightImageLimits {
   fileSizeMb?: number,
-  imageSize?: number,
+  imageSizePx?: number,
   jpegQuality?: number
 }
 
@@ -30,22 +30,22 @@ export class ReweightImage {
 
   limits: {
     fileSizeMb: number,
-    imageSize: number,
+    imageSizePx: number,
     jpegQuality: number
-  }
+  };// not exactly as ReweightImageLimits, as here nothing is optional
 
   options: {
     coverMaxImageSize: boolean,
     imageSizeRatio: number,
     jpegQualityRatio: number
-  }
+  };// not exactly as ReweightImageOptions, as here nothing is optional
 
-  constructor(limits: ReweightLimits, options?: ReweightImageOptions) {
+  constructor(limits: ReweightImageLimits, options?: ReweightImageOptions) {
     const fullOptions = this.getCompleteInputOptions(options),
           fullLimits = this.getCompleteInputLimits(limits);
     this.limits = {
       fileSizeMb: <number>fullLimits.fileSizeMb * this.BYTES_IN_ONEMB,
-      imageSize: <number>fullLimits.imageSize,
+      imageSizePx: <number>fullLimits.imageSizePx,
       jpegQuality: <number>fullLimits.jpegQuality
     };
     this.options = {
@@ -58,7 +58,7 @@ export class ReweightImage {
   compressImageFile(fileImage: File) {
     return this.CONVERT.getBase64FromBlob(fileImage).pipe(
       mergeMap((base64data: Base64data)=>{
-          return this.compressBase64Image(base64data, this.limits.imageSize, this.limits.jpegQuality);
+          return this.compressBase64Image(base64data, this.limits.imageSizePx, this.limits.jpegQuality);
       }),
       mergeMap((base64image: Base64image) => {
         return this.reweightBase64Image(base64image);
@@ -72,7 +72,7 @@ export class ReweightImage {
 
   // Recursively calls compressBase64Image until file size is under limits.fileSizeMb
   private reweightBase64Image(base64image: Base64image): Observable<Base64image> {
-    let imageSize = this.limits.imageSize,
+    let imageSize = this.limits.imageSizePx,
         jpegQuality = this.limits.jpegQuality;
     return new Observable((observer: Observer<Base64image>)=>{
       of(base64image).pipe(
@@ -98,10 +98,10 @@ export class ReweightImage {
     });
   }
 
-  private getCompleteInputLimits(limits?: ReweightLimits): ReweightLimits {
+  private getCompleteInputLimits(limits?: ReweightImageLimits): ReweightImageLimits {
     if (!limits) limits = {};
     limits.fileSizeMb = limits.fileSizeMb?? Infinity;
-    limits.imageSize = limits.imageSize?? Infinity;
+    limits.imageSizePx = limits.imageSizePx?? Infinity;
     limits.jpegQuality = 1;
     return limits;
   }
