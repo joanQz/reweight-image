@@ -29,10 +29,19 @@ test('converting passed image64 to Blob should return a Blob object of 1833 byte
   expect(blob.size).toBe(1833);
 });
 
-// test('get scales for 4000x3000 to max 1000 returns {0.25, 1000, 750}', ()=>{
+test('get scales for 4000x3000 to max 1000 cover returns {0.33, 1333, 1000}', ()=>{
+  const converter = new reweight.Reweight();
+  let getScales = converter['getScales'];
+  const {scale: scale, xScale: xScale, yScale: yScale } = getScales(1000, 4000, 3000, true);
+  expect(scale).toBe(1/3);
+  expect(xScale).toBe(4000/3);
+  expect(yScale).toBe(1000);
+});
+
+// test('get scales for 4000x3000 to max 1000 not cover returns {0.25, 1000, 750}', ()=>{
 //   const converter = new reweight.Reweight();
 //   let getScales = converter['getScales'];
-//   console.log(getScales(1000, 4000, 3000));
+//   console.log(getScales(1000, 4000, 3000, false));
 // });
 
 // TODO: test main function with a headless browser
