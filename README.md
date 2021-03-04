@@ -7,7 +7,7 @@ File size is reduced by progressively resizing *image dimensions in pixels* and/
 ## Install
 
 ```sh
-npm i reweight --save
+npm i reweight-image --save
 ```
 
 ## Usage

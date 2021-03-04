@@ -1,5 +1,5 @@
 {
-  "name": "@ereasons/reweight",
+  "name": "reweight-image",
   "version": "0.1.0",
   "devDependencies": {
     "@types/jest": "^26.0.20",
