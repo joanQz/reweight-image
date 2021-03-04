@@ -2,7 +2,7 @@
 
 Resize file images in browser by limiting its **size in megabytes** (its 'weight'), its **size in pixels** or its **jpeg quality**.
 
-File size is reduced by progressively resizing *image dimensions in pixels* and/or by progressively reducing *jpeg quality*, until output is under given limits. It means that consecutive steps will take the image and apply a factor to its size (starting from the input image dimensions or from the maximum specified size - the lower one) and/or to its jpeg quality (starting from the maximum specified quality or from 1 is none is specified).
+File size is reduced by progressively resizing *image dimensions in pixels* and/or by progressively reducing *jpeg quality*, until output is under given limits. It means that iterative steps will take the image and apply a factor to its size (starting from the input image dimensions or from the maximum specified size - the lower one) and/or to its jpeg quality (starting from the maximum specified quality or from 1 is none is specified).
 
 ## Install
 
